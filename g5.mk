@@ -48,7 +48,7 @@ PRODUCT_PACKAGES += \
 
 # Fingerprint
 PRODUCT_PACKAGES += \
-    android.hardware.biometrics.fingerprint@2.0-service
+    android.hardware.biometrics.fingerprint@2.1-service
 
 # IR
 PRODUCT_PACKAGES += \
@@ -56,7 +56,7 @@ PRODUCT_PACKAGES += \
 
 # Lights
 PRODUCT_PACKAGES += \
-    android.hardware.light@2.0-service.alice
+    android.hardware.light-service.alice
 
 # Media
 PRODUCT_COPY_FILES += \
@@ -68,7 +68,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
 
 # Sensors
 PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/configs/sensors/sensor_def_h1.conf:system/etc/sensors/sensor_def_common.conf
+    $(LOCAL_PATH)/configs/sensors/sensor_def_h1.conf:$(TARGET_COPY_OUT_VENDOR)/etc/sensors/sensor_def_common.conf
 
 # Soong namespaces
 PRODUCT_SOONG_NAMESPACES += \

@@ -14,53 +14,45 @@
  * limitations under the License.
  */
 
-#ifndef ANDROID_HARDWARE_LIGHT_V2_0_LIGHT_H
-#define ANDROID_HARDWARE_LIGHT_V2_0_LIGHT_H
+#ifndef ANDROID_HARDWARE_LIGHT_LIGHT_H
+#define ANDROID_HARDWARE_LIGHT_LIGHT_H
 
-#include <android/hardware/light/2.0/ILight.h>
-#include <hidl/Status.h>
+#include <aidl/android/hardware/light/BnLights.h>
 
 #include <fstream>
+#include <functional>
 #include <mutex>
 #include <unordered_map>
 
-namespace android {
-namespace hardware {
-namespace light {
-namespace V2_0 {
-namespace implementation {
+namespace aidl::android::hardware::light {
 
-struct Light : public ILight {
-    Light(std::ofstream&& backlight, std::ofstream&& emotionalBlinkPattern, std::ofstream&& emotionalOnOffPattern);
+struct Light : public BnLights {
+    Light(std::ofstream&& backlight, std::ofstream&& emotionalBlinkPattern,
+          std::ofstream&& emotionalOnOffPattern);
 
-    // Methods from ::android::hardware::light::V2_0::ILight follow.
-    Return<Status> setLight(Type type, const LightState& state)  override;
-    Return<void> getSupportedTypes(getSupportedTypes_cb _hidl_cb)  override;
+    ndk::ScopedAStatus setLightState(int32_t id, const HwLightState& state) override;
+    ndk::ScopedAStatus getLights(std::vector<HwLight>* lights) override;
 
-private:
-    void setAttentionLight(const LightState& state);
-    void setBacklight(const LightState& state);
-    void setBatteryLight(const LightState& state);
-    void setNotificationLight(const LightState& state);
+  private:
+    void setAttentionLight(const HwLightState& state);
+    void setBacklight(const HwLightState& state);
+    void setBatteryLight(const HwLightState& state);
+    void setNotificationLight(const HwLightState& state);
     void checkLightStateLocked();
-    void setLightLocked(const LightState& state);
+    void setLightLocked(const HwLightState& state);
 
     std::ofstream mBacklight;
     std::ofstream mEmotionalBlinkPath;
     std::ofstream mEmotionalOnOffPath;
 
-    LightState mAttentionState;
-    LightState mBatteryState;
-    LightState mNotificationState;
+    HwLightState mAttentionState;
+    HwLightState mBatteryState;
+    HwLightState mNotificationState;
 
-    std::unordered_map<Type, std::function<void(const LightState&)>> mLights;
+    std::unordered_map<int32_t, std::function<void(const HwLightState&)>> mLights;
     std::mutex mLock;
 };
 
-}  // namespace implementation
-}  // namespace V2_0
-}  // namespace light
-}  // namespace hardware
-}  // namespace android
+}  // namespace aidl::android::hardware::light
 
-#endif  // ANDROID_HARDWARE_LIGHT_V2_0_LIGHT_H
+#endif  // ANDROID_HARDWARE_LIGHT_LIGHT_H

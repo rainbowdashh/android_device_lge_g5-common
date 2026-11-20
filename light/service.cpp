@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "android.hardware.light@2.0-service.alice"
+#define LOG_TAG "android.hardware.light-service.alice"
 
-#include <hidl/HidlTransportSupport.h>
-#include <utils/Errors.h>
+#include <android/binder_manager.h>
+#include <android/binder_process.h>
+#include <log/log.h>
+
+#include <cerrno>
+#include <cstring>
 
 #include "Light.h"
 
-// libhwbinder:
-using android::hardware::configureRpcThreadpool;
-using android::hardware::joinRpcThreadpool;
-
-// Generated HIDL files
-using android::hardware::light::V2_0::ILight;
-using android::hardware::light::V2_0::implementation::Light;
+using aidl::android::hardware::light::Light;
 
 const static std::string kBacklightPath = "/sys/class/leds/lcd-backlight/brightness";
 const static std::string kEmotionalBlinkPath = "/sys/class/lg_rgb_led/use_patterns/blink_patterns";
@@ -55,20 +53,14 @@ int main() {
         return -error;
     }
 
-    android::sp<ILight> service = new Light(std::move(backlight), std::move(emotionalBlinkPattern), std::move(emotionalOnOffPattern));
-
-    configureRpcThreadpool(1, true);
-
-    android::status_t status = service->registerAsService();
-
-    if (status != android::OK) {
+    ABinderProcess_setThreadPoolMaxThreadCount(0);
+    auto service = ndk::SharedRefBase::make<Light>(
+        std::move(backlight), std::move(emotionalBlinkPattern), std::move(emotionalOnOffPattern));
+    const std::string instance = std::string(Light::descriptor) + "/default";
+    if (AServiceManager_addService(service->asBinder().get(), instance.c_str()) != STATUS_OK) {
         ALOGE("Cannot register Light HAL service");
         return 1;
     }
-
-    ALOGI("Light HAL Ready.");
-    joinRpcThreadpool();
-    // Under normal cases, execution will not reach this line.
-    ALOGE("Light HAL failed to join thread pool.");
+    ABinderProcess_joinThreadPool();
     return 1;
 }

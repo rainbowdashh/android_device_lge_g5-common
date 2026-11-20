@@ -1,15 +1,13 @@
 cc_binary {
-    name: "android.hardware.light@2.0-service.alice",
+    name: "android.hardware.light-service.alice",
     relative_install_path: "hw",
-    init_rc: ["android.hardware.light@2.0-service.alice.rc"],
+    init_rc: ["android.hardware.light-service.alice.rc"],
+    vintf_fragments: ["android.hardware.light-service.alice.xml"],
     srcs: ["service.cpp", "Light.cpp"],
     shared_libs: [
-        "libcutils",
-        "libhardware",
-        "libhidlbase",
+        "android.hardware.light-V2-ndk",
+        "libbinder_ndk",
         "liblog",
-        "libutils",
-        "android.hardware.light@2.0",
     ],
-    proprietary: true,
+    vendor: true,
 }
