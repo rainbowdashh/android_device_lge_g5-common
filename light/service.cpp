@@ -20,45 +20,17 @@
 #include <android/binder_process.h>
 #include <log/log.h>
 
-#include <cerrno>
-#include <cstring>
-
 #include "Light.h"
 
 using aidl::android::hardware::light::Light;
 
-const static std::string kBacklightPath = "/sys/class/leds/lcd-backlight/brightness";
-const static std::string kEmotionalBlinkPath = "/sys/class/lg_rgb_led/use_patterns/blink_patterns";
-const static std::string kEmotionalOnOffPath = "/sys/class/lg_rgb_led/use_patterns/onoff_patterns";
-
 int main() {
-    std::ofstream backlight(kBacklightPath);
-    if (!backlight) {
-        int error = errno;
-        ALOGE("Failed to open %s (%d): %s", kBacklightPath.c_str(), error, strerror(error));
-        return -error;
-    }
-
-    std::ofstream emotionalBlinkPattern(kEmotionalBlinkPath);
-    if (!emotionalBlinkPattern) {
-        int error = errno;
-        ALOGE("Failed to open %s (%d): %s", kEmotionalBlinkPath.c_str(), error, strerror(error));
-        return -error;
-    }
-
-    std::ofstream emotionalOnOffPattern(kEmotionalOnOffPath);
-    if (!emotionalOnOffPattern) {
-        int error = errno;
-        ALOGE("Failed to open %s (%d): %s", kEmotionalOnOffPath.c_str(), error, strerror(error));
-        return -error;
-    }
-
     ABinderProcess_setThreadPoolMaxThreadCount(0);
-    auto service = ndk::SharedRefBase::make<Light>(
-        std::move(backlight), std::move(emotionalBlinkPattern), std::move(emotionalOnOffPattern));
+    auto service = ndk::SharedRefBase::make<Light>();
     const std::string instance = std::string(Light::descriptor) + "/default";
-    if (AServiceManager_addService(service->asBinder().get(), instance.c_str()) != STATUS_OK) {
-        ALOGE("Cannot register Light HAL service");
+    binder_status_t status = AServiceManager_addService(service->asBinder().get(), instance.c_str());
+    if (status != STATUS_OK) {
+        ALOGE("Cannot register Light HAL service: %d", status);
         return 1;
     }
     ABinderProcess_joinThreadPool();

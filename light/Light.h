@@ -19,7 +19,6 @@
 
 #include <aidl/android/hardware/light/BnLights.h>
 
-#include <fstream>
 #include <functional>
 #include <mutex>
 #include <unordered_map>
@@ -27,8 +26,7 @@
 namespace aidl::android::hardware::light {
 
 struct Light : public BnLights {
-    Light(std::ofstream&& backlight, std::ofstream&& emotionalBlinkPattern,
-          std::ofstream&& emotionalOnOffPattern);
+    Light();
 
     ndk::ScopedAStatus setLightState(int32_t id, const HwLightState& state) override;
     ndk::ScopedAStatus getLights(std::vector<HwLight>* lights) override;
@@ -40,10 +38,6 @@ struct Light : public BnLights {
     void setNotificationLight(const HwLightState& state);
     void checkLightStateLocked();
     void setLightLocked(const HwLightState& state);
-
-    std::ofstream mBacklight;
-    std::ofstream mEmotionalBlinkPath;
-    std::ofstream mEmotionalOnOffPath;
 
     HwLightState mAttentionState;
     HwLightState mBatteryState;

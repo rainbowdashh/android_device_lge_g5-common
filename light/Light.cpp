@@ -22,6 +22,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <fstream>
 
 #define LCD_BRIGHTNESS_MIN 1  // Matches config_screenBrightnessSettingMinimum
 #define LCD_BRIGHTNESS_MAX 255
@@ -29,6 +30,20 @@
 
 namespace {
 using aidl::android::hardware::light::HwLightState;
+
+static constexpr const char* kBacklightPath = "/sys/class/leds/lcd-backlight/brightness";
+static constexpr const char* kBacklightExPath = "/sys/class/leds/lcd-backlight-ex/brightness";
+static constexpr const char* kEmotionalBlinkPath = "/sys/class/lg_rgb_led/use_patterns/blink_patterns";
+static constexpr const char* kEmotionalOnOffPath = "/sys/class/lg_rgb_led/use_patterns/onoff_patterns";
+
+static void writeSysfs(const char* path, const std::string& value) {
+    std::ofstream file(path);
+    if (!file) {
+        ALOGE("Failed to open %s", path);
+        return;
+    }
+    file << value << std::endl;
+}
 
 static uint32_t rgbToBrightness(const HwLightState& state) {
     uint32_t color = state.color & 0x00ffffff;
@@ -42,11 +57,7 @@ static bool isLit(const HwLightState& state) { return (state.color & 0x00ffffff)
 
 namespace aidl::android::hardware::light {
 
-Light::Light(std::ofstream&& backlight, std::ofstream&& emotionalBlinkPattern,
-             std::ofstream&& emotionalOnOffPattern)
-    : mBacklight(std::move(backlight)),
-      mEmotionalBlinkPath(std::move(emotionalBlinkPattern)),
-      mEmotionalOnOffPath(std::move(emotionalOnOffPattern)) {
+Light::Light() {
     auto attnFn(std::bind(&Light::setAttentionLight, this, std::placeholders::_1));
     auto backlightFn(std::bind(&Light::setBacklight, this, std::placeholders::_1));
     auto batteryFn(std::bind(&Light::setBatteryLight, this, std::placeholders::_1));
@@ -92,7 +103,8 @@ void Light::setBacklight(const HwLightState& state) {
     std::lock_guard<std::mutex> lock(mLock);
     uint32_t brightness = rgbToBrightness(state);
     brightness = applyGamma(brightness);
-    mBacklight << brightness << std::endl;
+    writeSysfs(kBacklightPath, std::to_string(brightness));
+    writeSysfs(kBacklightExPath, std::to_string(brightness));
 }
 
 void Light::setBatteryLight(const HwLightState& state) {
@@ -116,8 +128,8 @@ void Light::checkLightStateLocked() {
         setLightLocked(mBatteryState);
     } else {
         /* Lights off */
-        mEmotionalBlinkPath << "0x0,-1,-1" << std::endl;
-        mEmotionalOnOffPath << "0x0" << std::endl;
+        writeSysfs(kEmotionalBlinkPath, "0x0,-1,-1");
+        writeSysfs(kEmotionalOnOffPath, "0x0");
     }
 }
 
@@ -146,12 +158,12 @@ void Light::setLightLocked(const HwLightState& state) {
     if (offMS <= 0) {
         snprintf(pattern, sizeof(pattern), "0x%06x", color);
         ALOGD("%s: Using onoff pattern: inColor=0x%06x\n", __func__, color);
-        mEmotionalOnOffPath << pattern << std::endl;
+        writeSysfs(kEmotionalOnOffPath, pattern);
     } else {
         snprintf(pattern, sizeof(pattern), "0x%06x,%d,%d", color, onMS, offMS);
         ALOGD("%s: Using blink pattern: inColor=0x%06x delay_on=%d, delay_off=%d\n", __func__,
               color, onMS, offMS);
-        mEmotionalBlinkPath << pattern << std::endl;
+        writeSysfs(kEmotionalBlinkPath, pattern);
     }
 }
 
