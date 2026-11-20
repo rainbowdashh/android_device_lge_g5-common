@@ -20,10 +20,6 @@ DEVICE_COMMON_PATH := device/lge/g5-common
 # inherit from common msm8996
 -include device/lge/msm8996-common/BoardConfigCommon.mk
 
-# Camera
-TARGET_LD_SHIM_LIBS += \
-    /system/vendor/lib/libbwfocuspeaking.so|/system/vendor/lib/libshim_bwfocus.so
-
 # HIDL
 DEVICE_MANIFEST_FILE += $(DEVICE_COMMON_PATH)/manifest.xml
 
@@ -42,7 +38,7 @@ BOARD_SYSTEMIMAGE_PARTITION_SIZE := 4831838208
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 25241321472
 
 # SELinux policies
-BOARD_SEPOLICY_DIRS += $(DEVICE_COMMON_PATH)/sepolicy
+BOARD_VENDOR_SEPOLICY_DIRS += $(DEVICE_COMMON_PATH)/sepolicy
 
 # inherit from the proprietary version
 include vendor/lge/g5-common/BoardConfigVendor.mk
